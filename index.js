@@ -1,9 +1,18 @@
 // when page loads request user location
 window.onload = async () => {
     const coordinates = await getUserCoordinates();
-    // ibMap.coordinates = coordinates;
+    ibMap.coordinates = coordinates;
     ibMap.createMap(coordinates);
 };
+
+// get user coordinates
+async function getUserCoordinates() {
+    let position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+    });
+    return [position.coords.latitude, position.coords.longitude];
+};
+
 //  building map function
 const ibMap = {
     createMap: function (coordinates) {
@@ -14,32 +23,41 @@ const ibMap = {
         });
         // add tile layer
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution:
-                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(ibMap);
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(Map);
 
         // make marker
         const markers = L.marker(coordinates);
-        markers.addTo(ibMap).bindPopup("Welcome to IB").openPopup();
+        markers.addTo(Map).bindPopup("<p1>Welcome to IB</p1>").openPopup();
+        ibMap.map = map;
+    },
+
+//long way to create markers -- changed to a loop
+        // const marker2 = L.marker([ibMap.markers[1][0].latitude, ibMap.markers[1][0].longitude]).bindPopup(`${ibMap.markers[1][1]}`);
+        // const marker3 = L.marker([ibMap.markers[2][0].latitude, ibMap.markers[2][0].longitude]).bindPopup(`${ibMap.markers[2][1]}`);
+        // const marker4 = L.marker([ibMap.markers[3][0].latitude, ibMap.markers[3][0].longitude]).bindPopup(`${ibMap.markers[3][1]}`);
+        // const marker5 = L.marker([ibMap.markers[4][0].latitude, ibMap.markers[4][0].longitude]).bindPopup(`${ibMap.markers[4][1]}`);
+
+        // const markerGroup = L.layerGroup([marker1, marker2, marker3, marker4, marker5]);
+        // markerGroup.addTo(ibMap.map);
+
+// using for loop to refactor old code when creating markers. 5 markers
+    
+addMarkers: function () {
+    for (let i = 0; i < 5; i++) {
+        L.marker([ibMap.markers[i][0].latitude, ibMap.markers[i][0].longitude]).bindPopup(`${ibMap.markers[i][1]}`).addTo(ibMap.map);
+        }
     },
 };
 
-// get user coordinates
-async function getUserCoordinates() {
-    let position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
-    });
-    return [position.coords.latitude, position.coords.longitude];
-}
-
 // installed foursuare
-let options = {method: 'GET', headers: {accept: 'application/json',Authorization: "fsq3b2t5F7tzjFsDRV8PmYMp/hrDuCRx5x/J0sW9jhlcmBE=", } };
+let options = {method: 'GET', headers: {Accept: 'application/json',Authorization: "fsq3b2t5F7tzjFsDRV8PmYMp/hrDuCRx5x/J0sW9jhlcmBE=", } };
 
 // used fetch() to get data
 async function fetchPlaces(){
-    let response = await fetch(`https://cors-anywhere.herokuapp.com/https://api.foursquare.com/v3/places/search?&query=${business}&limit=5&ll=`, options); 
-    let places = response.json();
-    return places;
+    let response = await fetch(`https://cors-anywhere.herokuapp.com/https://api.foursquare.com/v3/places/search?&query=${business}&limit=5&ll=${ibMap.coordinates}`, options); 
+    let places = await response.json();
+    return places.results;
 }
 
 // formatted that data into a location array
@@ -52,27 +70,20 @@ function parseLocations(results){
     return locations;
 }
 
-// document.getElementById('submit').addEventListener('click', function (e) {
-//     e.preventDefault();
-//     submitButton();
-// });
+// need to add event listener for the submit button
+document.getElementById('submit').addEventListener('click', function (e) {
+    e.preventDefault();
+    submitButton();
+});
 
-// function submitButton() {
-//     let business = document.getElementById('business').value;
-//     let fourSquareData = fetchPlaces(business);
-//     parseLocations(fourSquareData);
-//     fourSquareData = business;
-//     ibMap.addMarkers();
-// }
+async function submitButton() {
+    let selection = document.getElementById('business').value;
+    let fourSquareData = await fetchPlaces(selection);
+    let parsedData = parseLocations(fourSquareData);
+    myMap.markers = parsedData;
+    myMap.addMarkers();
+}
 
-// Metro station markers
-// const rS = L.marker([48.866200610611926, 2.352236247419453], {icon: redIcon}).bindPopup('RÃ©aumur-SÃ©bastopol')
-// const sSD = L.marker([48.869531786321566, 2.3528590208055196]).bindPopup('Strasbourg-Saint-Denis')
-// const sentier = L.marker([48.8673721067762, 2.347107922912739]).bindPopup('Sentier')
-// const bourse = L.marker([48.86868503971672, 2.3412285142058167]).bindPopup('Bourse')
-// const qS = L.marker([48.869560129483226, 2.3358638645569543]).bindPopup('Quatre Septembre')
-// const gB = L.marker([48.871282159004856, 2.3434818588892714]).bindPopup('Grands Boulevards')
 
-// const stations = L.layerGroup([rS, sSD, sentier, bourse, qS, gB]).addTo(myMap)
 
 
